@@ -5,8 +5,8 @@ provider "aws" {
 
 resource "aws_default_vpc" "default" {}
 
-resource "aws_security_group" "prod" {
-    name = "prod_server"
+resource "aws_security_group" "prd" {
+    name = "prd_server"
     description = "Allow the API requests for the server."
 
     ingress {
@@ -36,12 +36,14 @@ resource "aws_security_group" "prod" {
 }
 
 
-resource "aws_instance" "prod" {
+resource "aws_instance" "prd" {
+    count = 2
+
     ami = "ami-03c8adc67e56c7f1d"
     instance_type = "t2.nano"
 
     vpc_security_group_ids = [
-        aws_security_group.prod.id
+        aws_security_group.prd.id
     ]
 
     tags = {
@@ -49,8 +51,13 @@ resource "aws_instance" "prod" {
     }
 }
 
-resource "aws_eip" "prod_web" {
-    instance = aws_instance.prod.id
+resource "aws_eip_association" "prd" {
+    instance_id = aws_instance.prd[0].id
+    allocation_id = aws_eip.prd.id
+}
+
+resource "aws_eip" "prd" {
+    instance = aws_instance.prd[0].id
 
     tags = {
         "Terraform": "true"
