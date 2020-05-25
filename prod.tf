@@ -67,62 +67,7 @@ resource "aws_security_group" "prd" {
     }
 }
 
-resource "aws_eip_association" "prd" {
-    instance_id = aws_instance.prd[0].id
-    allocation_id = aws_eip.prd.id
-}
-
-resource "aws_eip" "prd" {
-    instance = aws_instance.prd[0].id
-
-    tags = {
-        "Terraform": "true"
-    }
-}
-
-resource "aws_elb" "prd_web" {
-    name = "prd-web"
-    instances = aws_instance.prd.*.id
-    subnets = ["aws_default_subnet.default_az1.id", "aws_default_subnet.default_az2"]
-    security_groups = [aws_security_group.prd.id]
-
-    listener {
-        instance_port = 80
-        instance_protocol = "http"
-        lb_port = 80
-        lb_protocol = "http"
-    }
-}
-
-resource "aws_launch_template" "prd" {
-    name_prefix = "prd-web"
-    image_id = var.prd_image_id
-    instance_type = var.prd_instance_type
-    tags = {
-        "Terraform": "true"
-    }
-}
-
-resource "aws_autoscaling_group" "prd" {
-    availability_zones = ["us-east-1a", "us-east-2b"]
-    vpc_zone_identifier = [aws_default_subnet.default_az1.id, aws_default_subnet.default_az2.id]
-    desired_capacity = var.prd_desired_capacity
-    max_size = var.prd_max_size
-    min_size = var.prd_min_size
-    
-    launch_template {
-        id = aws_launch_template.prd.id
-        version = "$latest"
-    }
-
-    tag {
-        key = "Terraform"
-        value = "true"
-        propagate_at_launch = true
-    }
-}
-
-resource "aws_autoscaling_attachment" "prd" {
-    autoscaling_group_name = aws_autoscaling_group.prd.id
-    elb = aws_elb.prd_web.id
+module "web" {
+  source = "./modules/web"
+  
 }
